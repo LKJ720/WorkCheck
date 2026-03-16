@@ -636,6 +636,7 @@ async function doLogin(){
     if(loginRole==='admin'&&u.role!=='admin'){showToast('관리자 계정이 아닙니다','error');COMPANY_CODE='';setLoading('btn-login',false);return;}
     if(loginRole==='employee'&&u.role==='admin'){showToast('직원 탭을 이용해 주세요','error');COMPANY_CODE='';setLoading('btn-login',false);return;}
     currentUser=u;
+    saveAutoLogin(u.uid, companyCode);
     launchApp();
   }catch(err){
     console.error(err);
@@ -667,7 +668,7 @@ async function launchApp(){
 function doLogout(){
   if(gpsWatchId){navigator.geolocation.clearWatch(gpsWatchId);gpsWatchId=null;}
   currentGPS=null;
-  stopCamera();
+  clearAutoLogin();
   currentUser=null;COMPANY_CODE='';
   document.getElementById('screen-app').style.display='none';
   document.getElementById('screen-login').style.display='flex';
@@ -1345,15 +1346,52 @@ function showToast(msg,type=''){
 }
 
 // ══════════════════════════════════════════
-//  페이지 로드 시 URL 파라미터 확인
-//  (QR 스캔 후 자동 회사코드 입력)
+//  자동 로그인
 // ══════════════════════════════════════════
-window.addEventListener('load',()=>{
+const AUTO_KEY = 'wc_autologin';
+
+function saveAutoLogin(uid, companyCode){
+  localStorage.setItem(AUTO_KEY, JSON.stringify({uid, companyCode}));
+}
+function clearAutoLogin(){
+  localStorage.removeItem(AUTO_KEY);
+}
+function getAutoLogin(){
+  try{ const v=localStorage.getItem(AUTO_KEY); return v?JSON.parse(v):null; }catch{return null;}
+}
+
+window.addEventListener('load', async ()=>{
+  // URL 파라미터로 회사코드 자동 입력
   const params=new URLSearchParams(window.location.search);
   const co=params.get('company');
-  if(co){
-    document.getElementById('li-company').value=co.toUpperCase();
-    showToast('회사 코드가 자동 입력되었습니다 — 로그인하세요');
+  if(co) document.getElementById('li-company').value=co.toUpperCase();
+
+  // 자동 로그인 시도
+  const saved=getAutoLogin();
+  if(!saved) return;
+
+  // 로딩 표시
+  const card=document.querySelector('.login-card');
+  const origHTML=card.innerHTML;
+  card.innerHTML=`<div style="text-align:center;padding:3rem 1rem">
+    <div class="spinner" style="margin:0 auto 16px"></div>
+    <p style="color:var(--text2);font-size:14px">자동 로그인 중...</p>
+    <p style="color:var(--text3);font-size:12px;margin-top:8px">${saved.uid}</p>
+  </div>`;
+
+  try{
+    const exists = await companyExists(saved.companyCode);
+    if(!exists){ card.innerHTML=origHTML; clearAutoLogin(); return; }
+    COMPANY_CODE = saved.companyCode;
+    const{data:users}=await sb.from('users').select('*').eq('company_code',saved.companyCode).eq('uid',saved.uid).eq('active','active');
+    const u=users&&users[0];
+    if(!u){ card.innerHTML=origHTML; clearAutoLogin(); COMPANY_CODE=''; return; }
+    currentUser=u;
+    launchApp();
+  } catch(e){
+    card.innerHTML=origHTML;
+    clearAutoLogin();
+    COMPANY_CODE='';
   }
 });
 </script>
