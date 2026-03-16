@@ -495,7 +495,7 @@ table.data-table tr:hover td{background:var(--surface2)}
     <p style="font-size:13px;color:var(--text2);margin-bottom:1.25rem">이 QR을 출입구에 부착하세요. 직원이 스캔하면 로그인 페이지가 자동으로 열립니다.</p>
     <div id="qr-print-area" style="background:#fff;padding:2rem;border-radius:16px;border:2px solid var(--border);display:inline-block;width:100%">
       <div style="font-size:13px;font-weight:700;color:#1e3a8a;margin-bottom:4px;letter-spacing:1px;text-transform:uppercase" id="qr-company-label">회사명</div>
-      <canvas id="qr-gen-canvas" width="260" height="260" style="display:block;margin:1rem auto;border-radius:8px"></canvas>
+      <img id="qr-gen-img" src="" width="260" height="260" style="display:block;margin:1rem auto;border-radius:8px;background:#f4f6fb"/>
       <div style="font-size:22px;font-weight:800;color:#111;margin-bottom:4px">출 · 퇴근 체크</div>
       <div style="font-size:12px;color:#6b7280">스마트폰 카메라로 QR을 스캔하세요</div>
       <div style="margin-top:12px;padding-top:12px;border-top:1px dashed #e5e8ef;font-size:11px;color:#9ca3af">WorkCheck Pro · 출퇴근 관리 시스템</div>
@@ -1152,23 +1152,18 @@ async function deleteEmployee(uid){
 function showCompanyQR(){
   getSettings().then(cfg=>{
     document.getElementById('qr-company-label').textContent=cfg.company||'우리 회사';
-    // QR에 현재 페이지 URL + 회사코드 포함 → 직원이 스캔하면 사이트가 자동으로 열림
     const qrUrl=`${window.location.href.split('?')[0]}?company=${COMPANY_CODE}`;
-    const tryDraw=()=>{
-      if(typeof QRCode!=='undefined'){
-        const canvas=document.getElementById('qr-gen-canvas');
-        canvas.width=260;canvas.height=260;
-        QRCode.toCanvas(canvas,qrUrl,{width:260,margin:2,color:{dark:'#1e3a8a',light:'#ffffff'},errorCorrectionLevel:'M'},err=>{if(err)console.error('QR 오류:',err);});
-      }else{setTimeout(tryDraw,200);}
-    };
-    tryDraw();
+    const encoded=encodeURIComponent(qrUrl);
+    const apiUrl=`https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encoded}&color=1e3a8a&bgcolor=ffffff&margin=10`;
+    const img=document.getElementById('qr-gen-img');
+    img.src=apiUrl;
+    img.alt='QR 코드 로딩 중...';
     openModal('modal-qr');
   });
 }
 function printQR(){
-  const area=document.getElementById('qr-print-area');
   const cfg_name=document.getElementById('qr-company-label').textContent;
-  const canvas=area.querySelector('canvas');
+  const imgSrc=document.getElementById('qr-gen-img').src;
   const win=window.open('','_blank','width=500,height=650');
   win.document.write(`<!DOCTYPE html><html><head>
     <meta charset="UTF-8"/>
@@ -1191,7 +1186,7 @@ function printQR(){
   </head><body>
     <div class="wrap">
       <div class="co-name">${cfg_name}</div>
-      <img src="${canvas.toDataURL()}" width="280" height="280"/>
+      <img src="${imgSrc}" width="280" height="280"/>
       <div class="headline">출 · 퇴근 체크</div>
       <div class="sub">스마트폰 카메라로 QR을 스캔하세요</div>
       <div class="steps">
