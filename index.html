@@ -294,22 +294,16 @@ table.data-table tr:hover td{background:var(--surface2)}
             <div id="emp-status-pill" class="status-pill idle">
               <span class="dot"></span><span id="emp-status-text">미출근</span>
             </div>
-            <div id="qr-placeholder" class="qr-placeholder" onclick="startCamera()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><rect x="7" y="7" width="4" height="4" rx="1"/><rect x="13" y="7" width="4" height="4" rx="1"/><rect x="7" y="13" width="4" height="4" rx="1"/><path d="M13 13h1m3 0h1m-4 4h4"/></svg>
-              <p>카메라로 QR 스캔</p>
-              <p style="font-size:11px;color:var(--text3)">클릭하여 카메라 시작</p>
+            <!-- GPS 상태 표시 -->
+            <div id="gps-status-box" style="margin:0.75rem auto;max-width:280px;padding:10px 16px;border-radius:12px;background:var(--surface2);border:1.5px solid var(--border);font-size:13px;display:flex;align-items:center;gap:8px">
+              <span id="gps-icon">📍</span>
+              <span id="gps-status-text" style="color:var(--text2)">위치 확인 중...</span>
             </div>
-            <div id="qr-viewer" class="qr-viewer" style="display:none">
-              <video id="qr-video" playsinline autoplay muted></video>
-              <div class="qr-overlay"><div class="qr-frame"><div class="scan-line"></div></div></div>
+            <div class="checkin-actions" style="margin-top:1.25rem">
+              <button id="btn-checkin" class="btn btn-success btn-block" style="max-width:280px;padding:16px;font-size:16px" onclick="manualCheckin()">✅ 출근하기</button>
+              <button id="btn-checkout" class="btn btn-danger btn-block" style="max-width:280px;padding:16px;font-size:16px;display:none" onclick="manualCheckout()">🏁 퇴근하기</button>
             </div>
-            <canvas id="qr-canvas" style="display:none"></canvas>
-            <div class="checkin-actions">
-              <button id="btn-stop-cam" class="btn btn-secondary" style="display:none" onclick="stopCamera()">카메라 중지</button>
-              <button id="btn-checkin" class="btn btn-success btn-block" style="max-width:260px" onclick="manualCheckin()">출근 처리</button>
-              <button id="btn-checkout" class="btn btn-danger btn-block" style="max-width:260px;display:none" onclick="manualCheckout()">퇴근 처리</button>
-            </div>
-            <div class="today-record-grid">
+            <div class="today-record-grid" style="margin-top:1.5rem">
               <div class="rec-item green"><div class="rec-label">출근</div><div class="rec-val" id="rec-in">--:--</div></div>
               <div class="rec-item"><div class="rec-label">퇴근</div><div class="rec-val" id="rec-out">--:--</div></div>
               <div class="rec-item blue"><div class="rec-label">근무시간</div><div class="rec-val" id="rec-hours">-</div></div>
@@ -434,8 +428,31 @@ table.data-table tr:hover td{background:var(--surface2)}
               <select class="setting-input" id="cfg-weekly"><option value="yes">포함</option><option value="no">미포함</option></select>
             </div>
           </div>
+          <div class="settings-block">
+            <h3>📍 GPS 위치 인증 설정</h3>
+            <p style="font-size:12px;color:var(--text2);margin-bottom:1rem">직원이 출퇴근 버튼을 누를 때 회사 위치 반경 안에 있는지 확인합니다.</p>
+            <div class="setting-row">
+              <span class="setting-label">위치 인증 사용</span>
+              <select class="setting-input" id="cfg-gps-enable">
+                <option value="yes">사용 (권장)</option>
+                <option value="no">사용 안 함</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <span class="setting-label">허용 반경 (미터)</span>
+              <input type="number" class="setting-input" id="cfg-gps-radius" value="200" min="50" max="2000"/>
+            </div>
+            <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+              <span class="setting-label">회사 위치 좌표</span>
+              <div style="display:flex;gap:8px;width:100%;flex-wrap:wrap">
+                <input type="text" class="setting-input" id="cfg-gps-lat" placeholder="위도 (예: 37.5665)" style="width:calc(50% - 4px);text-align:left"/>
+                <input type="text" class="setting-input" id="cfg-gps-lng" placeholder="경도 (예: 126.9780)" style="width:calc(50% - 4px);text-align:left"/>
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="getCurrentLocationForAdmin()" style="width:100%">📍 현재 위치를 회사 위치로 설정</button>
+              <p style="font-size:11px;color:var(--text3)">관리자 폰으로 회사에서 위 버튼을 누르면 자동 설정됩니다</p>
+            </div>
+          </div>
           <button class="btn btn-primary" onclick="saveSettings()" style="margin-bottom:1.5rem">설정 저장</button>
-          <div class="settings-block" style="border:2px solid var(--danger-light)">
             <h3 style="color:var(--danger)">관리자 계정 변경</h3>
             <p style="font-size:12px;color:var(--text2);margin-bottom:1rem">현재 비밀번호를 입력한 후 새 정보를 입력하세요.</p>
             <div class="setting-row"><span class="setting-label">현재 비밀번호</span><input type="password" class="setting-input" id="adm-cur-pw" placeholder="현재 비밀번호" style="width:180px;text-align:left"/></div>
@@ -648,6 +665,8 @@ async function launchApp(){
 }
 
 function doLogout(){
+  if(gpsWatchId){navigator.geolocation.clearWatch(gpsWatchId);gpsWatchId=null;}
+  currentGPS=null;
   stopCamera();
   currentUser=null;COMPANY_CODE='';
   document.getElementById('screen-app').style.display='none';
@@ -714,7 +733,7 @@ function updateClock(){
 // ══════════════════════════════════════════
 //  EMPLOYEE PAGE
 // ══════════════════════════════════════════
-function initEmployeePage(){startClock();loadTodayStatus();populateMyHistoryMonths();}
+function initEmployeePage(){startClock();loadTodayStatus();populateMyHistoryMonths();startGPSWatch();}
 
 async function loadTodayStatus(){
   const{data}=await sb.from('attendance').select('*').eq('company_code',COMPANY_CODE).eq('uid',currentUser.uid).eq('date',todayStr()).single();
@@ -747,6 +766,9 @@ function manualCheckin(){processAttendance('in');}
 function manualCheckout(){processAttendance('out');}
 
 async function processAttendance(type){
+  // GPS 검증
+  const gpsOk=await verifyGPSForCheckin();
+  if(!gpsOk)return;
   const today=todayStr();const time=nowTime();
   if(type==='in'){
     const{data:existing}=await sb.from('attendance').select('id').eq('company_code',COMPANY_CODE).eq('uid',currentUser.uid).eq('date',today).single();
@@ -779,59 +801,97 @@ async function processAttendance(type){
 }
 
 // ══════════════════════════════════════════
-//  QR CAMERA SCAN
+//  GPS 위치 인증
 // ══════════════════════════════════════════
-async function startCamera(){
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){showToast('이 브라우저는 카메라를 지원하지 않습니다','error');return;}
-  try{
-    videoStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:640},height:{ideal:480}}});
-    const video=document.getElementById('qr-video');
-    video.srcObject=videoStream;await video.play();
-    document.getElementById('qr-placeholder').style.display='none';
-    document.getElementById('qr-viewer').style.display='block';
-    document.getElementById('btn-stop-cam').style.display='inline-block';
-    showToast('카메라 시작 — QR 코드를 화면에 맞춰주세요');
-    scanInterval=setInterval(()=>scanFrame(video),300);
-  }catch(e){showToast('카메라 접근 권한이 필요합니다','error');console.error(e);}
+function calcDistance(lat1,lng1,lat2,lng2){
+  const R=6371000;
+  const dLat=(lat2-lat1)*Math.PI/180;
+  const dLng=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
-function stopCamera(){
-  if(scanInterval){clearInterval(scanInterval);scanInterval=null;}
-  if(videoStream){videoStream.getTracks().forEach(t=>t.stop());videoStream=null;}
-  const v=document.getElementById('qr-viewer');if(v)v.style.display='none';
-  const p=document.getElementById('qr-placeholder');if(p)p.style.display='block';
-  const b=document.getElementById('btn-stop-cam');if(b)b.style.display='none';
-}
-function scanFrame(video){
-  const canvas=document.getElementById('qr-canvas');
-  if(!canvas||video.readyState!==video.HAVE_ENOUGH_DATA)return;
-  canvas.width=video.videoWidth;canvas.height=video.videoHeight;
-  const ctx=canvas.getContext('2d');
-  ctx.drawImage(video,0,0,canvas.width,canvas.height);
-  const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
-  const code=jsQR(imageData.data,imageData.width,imageData.height,{inversionAttempts:'attemptBoth'});
-  if(code&&code.data)handleQRResult(code.data);
-}
-function handleQRResult(data){
-  stopCamera();
-  // QR에 회사 코드가 포함된 URL이면 자동 처리
-  if(data.includes('company=')){
-    const url=new URL(data);
-    const co=url.searchParams.get('company');
-    if(co&&co===COMPANY_CODE){
-      const att=processAttendanceFromQR();
-      return;
-    }
+
+let gpsWatchId=null;
+let currentGPS=null;
+
+function startGPSWatch(){
+  const box=document.getElementById('gps-status-box');
+  const txt=document.getElementById('gps-status-text');
+  if(!navigator.geolocation){
+    if(box)box.style.background='var(--danger-light)';
+    if(txt)txt.textContent='GPS를 지원하지 않는 브라우저입니다';
+    return;
   }
-  // 이전 버전 호환
-  if(data==='WORKCHECK:COMPANY'){processAttendance(null);return;}
-  showToast('유효하지 않은 QR 코드입니다','error');
+  if(txt)txt.textContent='위치 확인 중...';
+  gpsWatchId=navigator.geolocation.watchPosition(
+    pos=>{
+      currentGPS={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy};
+      updateGPSStatus();
+    },
+    err=>{
+      currentGPS=null;
+      const txt=document.getElementById('gps-status-text');
+      const box=document.getElementById('gps-status-box');
+      if(box)box.style.background='var(--warning-light)';
+      if(box)box.style.borderColor='var(--warning)';
+      if(txt)txt.innerHTML='⚠️ 위치 권한을 허용해주세요';
+    },
+    {enableHighAccuracy:true,timeout:15000,maximumAge:10000}
+  );
 }
-async function processAttendanceFromQR(){
-  const today=todayStr();
-  const{data:rec}=await sb.from('attendance').select('*').eq('company_code',COMPANY_CODE).eq('uid',currentUser.uid).eq('date',today).single();
-  if(!rec||!rec.in_time){processAttendance('in');}
-  else if(!rec.out_time){processAttendance('out');}
-  else{showToast('오늘 출퇴근이 이미 완료되었습니다');}
+
+async function updateGPSStatus(){
+  if(!currentGPS)return;
+  const box=document.getElementById('gps-status-box');
+  const txt=document.getElementById('gps-status-text');
+  if(!box||!txt)return;
+  const cfg=await getSettings();
+  // GPS 미설정 또는 사용 안 함
+  if(cfg.gpsEnable==='no'||!cfg.gpsLat||!cfg.gpsLng){
+    box.style.background='var(--success-light)';box.style.borderColor='var(--success)';
+    txt.innerHTML='✅ 위치 인증 없이 출퇴근 가능';
+    return;
+  }
+  const dist=Math.round(calcDistance(currentGPS.lat,currentGPS.lng,parseFloat(cfg.gpsLat),parseFloat(cfg.gpsLng)));
+  const radius=cfg.gpsRadius||200;
+  if(dist<=radius){
+    box.style.background='var(--success-light)';box.style.borderColor='var(--success)';
+    txt.innerHTML=`✅ 회사 반경 안 (${dist}m) — 출퇴근 가능`;
+  }else{
+    box.style.background='var(--danger-light)';box.style.borderColor='var(--danger)';
+    txt.innerHTML=`❌ 회사에서 ${dist}m 떨어짐 (허용: ${radius}m 이내)`;
+  }
+}
+
+async function verifyGPSForCheckin(){
+  const cfg=await getSettings();
+  // GPS 설정 안 됐거나 사용 안 함이면 통과
+  if(cfg.gpsEnable==='no'||!cfg.gpsLat||!cfg.gpsLng)return true;
+  if(!currentGPS){
+    showToast('위치 정보를 가져오는 중입니다. 잠시 후 다시 시도하세요','error');
+    return false;
+  }
+  const dist=Math.round(calcDistance(currentGPS.lat,currentGPS.lng,parseFloat(cfg.gpsLat),parseFloat(cfg.gpsLng)));
+  const radius=cfg.gpsRadius||200;
+  if(dist>radius){
+    showToast(`회사에서 ${dist}m 떨어져 있습니다. 회사 반경(${radius}m) 안에서만 가능합니다`,'error');
+    return false;
+  }
+  return true;
+}
+
+function getCurrentLocationForAdmin(){
+  if(!navigator.geolocation){showToast('GPS를 지원하지 않는 브라우저입니다','error');return;}
+  showToast('현재 위치를 가져오는 중...');
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      document.getElementById('cfg-gps-lat').value=pos.coords.latitude.toFixed(6);
+      document.getElementById('cfg-gps-lng').value=pos.coords.longitude.toFixed(6);
+      showToast(`위치 설정 완료 (정확도: ${Math.round(pos.coords.accuracy)}m) — 저장 버튼을 누르세요`,'success');
+    },
+    err=>{showToast('위치 권한을 허용해주세요','error');},
+    {enableHighAccuracy:true,timeout:10000}
+  );
 }
 
 // ══════════════════════════════════════════
@@ -1215,6 +1275,10 @@ async function loadSettings(){
   document.getElementById('cfg-ot-rate').value=cfg.otRate;
   document.getElementById('cfg-weekly').value=cfg.weeklyPay;
   document.getElementById('cfg-company').value=cfg.company||'우리 회사';
+  document.getElementById('cfg-gps-enable').value=cfg.gpsEnable||'yes';
+  document.getElementById('cfg-gps-radius').value=cfg.gpsRadius||200;
+  document.getElementById('cfg-gps-lat').value=cfg.gpsLat||'';
+  document.getElementById('cfg-gps-lng').value=cfg.gpsLng||'';
   const ccd=document.getElementById('cfg-company-code-display');
   if(ccd)ccd.textContent=COMPANY_CODE;
   ['adm-cur-pw','adm-new-id','adm-new-pw','adm-new-pw2'].forEach(id=>document.getElementById(id).value='');
@@ -1229,6 +1293,10 @@ async function saveSettings(){
     otRate:parseFloat(document.getElementById('cfg-ot-rate').value),
     weeklyPay:document.getElementById('cfg-weekly').value,
     company:document.getElementById('cfg-company').value,
+    gpsEnable:document.getElementById('cfg-gps-enable').value,
+    gpsRadius:parseInt(document.getElementById('cfg-gps-radius').value)||200,
+    gpsLat:document.getElementById('cfg-gps-lat').value,
+    gpsLng:document.getElementById('cfg-gps-lng').value,
   };
   const{error}=await sb.from('settings').upsert({company_code:COMPANY_CODE,data:cfg,updated_at:new Date().toISOString()});
   if(error){showToast('저장 실패: '+error.message,'error');return;}
