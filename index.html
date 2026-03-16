@@ -322,24 +322,35 @@ table.data-table tr:hover td{background:var(--surface2)}
   </div>
 
   <div class="pricing" id="pricing">
-    <div class="section-title">완전 무료</div>
-    <div class="section-sub">모든 기능을 무료로 사용하세요 — 숨겨진 비용 없음</div>
-    <div class="price-grid" style="max-width:440px;margin:0 auto">
-      <div class="price-card popular">
-        <div class="popular-badge">🎉 현재 무료 오픈 중</div>
-        <div class="price-name">WorkCheck Pro</div>
+    <div class="section-title">요금제</div>
+    <div class="section-sub">지금은 모든 기능을 무료로 시작하세요</div>
+    <div class="price-grid">
+      <div class="price-card">
+        <div class="price-name">Free</div>
         <div class="price-amount">₩0<small>/월</small></div>
-        <div class="price-desc">모든 기능 제한 없이 무료로 사용하세요</div>
+        <div class="price-desc">소규모 사업장에 딱 맞는 플랜</div>
+        <div class="price-features">
+          <div class="price-feature">직원 계정 최대 5명</div>
+          <div class="price-feature">GPS 위치 인증</div>
+          <div class="price-feature">출퇴근 기록 관리</div>
+          <div class="price-feature">실시간 대시보드</div>
+          <div class="price-feature">자동 로그인</div>
+        </div>
+        <button class="btn btn-secondary btn-block" onclick="showLogin('setup')">무료로 시작하기</button>
+      </div>
+      <div class="price-card popular">
+        <div class="popular-badge">🔥 준비 중</div>
+        <div class="price-name">Premium</div>
+        <div class="price-amount">₩1,500<small>/월</small></div>
+        <div class="price-desc">더 많은 기능이 필요한 사업장</div>
         <div class="price-features">
           <div class="price-feature">직원 계정 무제한</div>
-          <div class="price-feature">GPS 위치 인증 (가라 출근 차단)</div>
-          <div class="price-feature">출퇴근 기록 전체 조회</div>
+          <div class="price-feature">Free 모든 기능</div>
           <div class="price-feature">급여 자동 계산</div>
           <div class="price-feature">급여명세서 PDF 출력</div>
           <div class="price-feature">휴무 캘린더</div>
-          <div class="price-feature">자동 로그인 (앱처럼 사용)</div>
         </div>
-        <button class="btn btn-primary btn-block" onclick="showLogin('setup')" style="padding:15px;font-size:15px">지금 무료로 시작하기 →</button>
+        <button class="btn btn-primary btn-block" onclick="showLogin('setup')">지금 무료로 시작 →</button>
       </div>
     </div>
   </div>
@@ -1560,21 +1571,24 @@ function showToast(msg,type=''){
 // ══ 자동 로그인 + URL 파라미터 처리 ══
 window.addEventListener('load',async()=>{
   const params=new URLSearchParams(window.location.search),co=params.get('company');
-  if(co)document.getElementById('li-company').value=co.toUpperCase();
+  if(co){
+    // QR 스캔으로 들어온 경우 → 바로 로그인 화면
+    document.getElementById('li-company').value=co.toUpperCase();
+    showLogin();
+    return;
+  }
+  // 자동 로그인 시도
   const saved=getAutoLogin();
-  if(!saved)return;
-  // 로딩 화면
-  document.getElementById('screen-landing').style.display='none';
-  document.getElementById('screen-login').style.display='flex';
-  document.querySelector('.login-card').innerHTML=`<div style="text-align:center;padding:3rem 1rem"><div class="spinner" style="margin:0 auto 16px"></div><p style="color:var(--text2);font-size:14px;font-weight:500">자동 로그인 중...</p><p style="color:var(--text3);font-size:12px;margin-top:6px">${saved.uid}</p></div>`;
+  if(!saved)return; // 저장된 로그인 없으면 랜딩 유지
+  // 저장된 로그인 있으면 → 랜딩 잠깐 보여주고 자동 로그인
   try{
-    if(!await companyExists(saved.companyCode)){clearAutoLogin();showLogin();return;}
+    if(!await companyExists(saved.companyCode)){clearAutoLogin();return;}
     COMPANY_CODE=saved.companyCode;
     const{data:users}=await sb.from('users').select('*').eq('company_code',saved.companyCode).eq('uid',saved.uid).eq('active','active');
     const u=users&&users[0];
-    if(!u){clearAutoLogin();COMPANY_CODE='';showLogin();return;}
+    if(!u){clearAutoLogin();COMPANY_CODE='';return;}
     currentUser=u;launchApp();
-  }catch{clearAutoLogin();COMPANY_CODE='';showLogin();}
+  }catch{clearAutoLogin();COMPANY_CODE='';}
 });
 </script>
 </body>
